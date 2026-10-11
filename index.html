@@ -1,0 +1,1459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Compute in Transit 05 — Training Transit, Simulated</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700&family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400;1,700&family=Geist+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400;1,700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #1c1815;
+            --bg-card: #231e1a;
+            --bg-code: #2b2520;
+            --text-primary: #efe8dc;
+            --text-secondary: #a2978b;
+            --accent: #6cb6c4;
+            --accent-dim: #6cb6c444;
+            --accent-glow: #6cb6c433;
+            --border: #3a322b;
+            --font-display: 'Bricolage Grotesque', sans-serif;
+            --font-mono: 'Geist Mono', 'Geist Mono', monospace;
+            --font-body: 'Instrument Sans', sans-serif;
+            --max-width: 900px;
+        }
+
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: var(--font-body);
+            font-size: 17px;
+            line-height: 1.7;
+            overflow-x: hidden;
+        }
+
+        /* ── Header ── */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem 1.5rem;
+            text-align: center;
+            position: relative;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .hero > * {
+            position: relative;
+            z-index: 1;
+        }
+
+        .series-label {
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            color: var(--accent);
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            margin-bottom: 1rem;
+        }
+
+        .hero h1 {
+            font-family: var(--font-display);
+            font-size: clamp(2rem, 5vw, 3.2rem);
+            font-weight: 700;
+            color: var(--text-primary);
+            line-height: 1.2;
+            margin-bottom: 1rem;
+        }
+
+        .hero h1 .accent {
+            color: var(--accent);
+        }
+
+        .hero .subtitle {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin-bottom: 2rem;
+        }
+
+        /* ── Tag Pills ── */
+        .tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            justify-content: center;
+            margin-bottom: 2.5rem;
+        }
+
+        .tag {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 999px;
+            border: 1px solid var(--accent);
+            color: var(--accent);
+            background: var(--accent-dim);
+            white-space: nowrap;
+        }
+
+        /* ── Pipeline Flow Bar ── */
+        .pipeline {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+            gap: 0.25rem;
+            margin-bottom: 1rem;
+            max-width: var(--max-width);
+        }
+
+        .pipeline-step {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            padding: 0.3rem 0.7rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            color: var(--text-secondary);
+            white-space: nowrap;
+        }
+
+        .pipeline-arrow {
+            color: var(--accent);
+            font-size: 0.9rem;
+            font-weight: 700;
+        }
+
+        /* ── Slides ── */
+        .slide {
+            min-height: 100vh;
+            max-width: var(--max-width);
+            margin: 0 auto;
+            padding: 4rem 1.5rem;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .slide-number {
+            font-family: var(--font-display);
+            font-size: 5rem;
+            font-weight: 700;
+            color: var(--accent-dim);
+            position: absolute;
+            top: 2rem;
+            right: 1.5rem;
+            line-height: 1;
+            user-select: none;
+        }
+
+        .slide h2 {
+            font-family: var(--font-display);
+            font-size: 1.9rem;
+            font-weight: 700;
+            color: var(--accent);
+            margin-bottom: 1.5rem;
+            line-height: 1.25;
+        }
+
+        .slide h3 {
+            font-family: var(--font-display);
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-top: 1.5rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .slide p {
+            margin-bottom: 1rem;
+            color: var(--text-secondary);
+        }
+
+        .slide p strong {
+            color: var(--text-primary);
+        }
+
+        .slide ul, .slide ol {
+            margin-bottom: 1rem;
+            padding-left: 1.5rem;
+            color: var(--text-secondary);
+        }
+
+        .slide li {
+            margin-bottom: 0.4rem;
+        }
+
+        .slide li strong {
+            color: var(--text-primary);
+        }
+
+        /* ── Code Blocks ── */
+        .code-block {
+            background: var(--bg-code);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin: 1.25rem 0;
+            overflow: hidden;
+        }
+
+        .code-header {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: var(--accent);
+            background: rgba(108,182,196,0.08);
+            padding: 0.4rem 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .code-block pre {
+            margin: 0;
+            padding: 1rem;
+            overflow-x: auto;
+        }
+
+        .code-block code {
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            line-height: 1.6;
+            color: #dad1c5;
+        }
+
+        /* Syntax highlighting (manual) */
+        .kw { color: #de805a; }
+        .fn { color: #d7bbdf; }
+        .str { color: #bcdbd4; }
+        .cm { color: #a2978b; font-style: italic; }
+        .num { color: #97cdc6; }
+        .type { color: #e3b174; }
+        .dir { color: #de805a; }
+        .mac { color: #e3b174; }
+
+        /* ── Tables ── */
+        .table-wrap {
+            overflow-x: auto;
+            margin: 1.25rem 0;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        th {
+            background: var(--bg-code);
+            color: var(--accent);
+            font-weight: 600;
+            text-align: left;
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border);
+            font-family: var(--font-display);
+            white-space: nowrap;
+        }
+
+        .table-wrap th { white-space: normal; }   /* long headers wrap rather than widen the table */
+
+        td {
+            padding: 0.6rem 1rem;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-secondary);
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:nth-child(even) td {
+            background: rgba(35,30,26,0.5);
+        }
+
+        /* ── Diagrams ── */
+        .diagram-flow {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 1.5rem 0;
+            padding: 1.5rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+        }
+
+        .diagram-box {
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            padding: 0.5rem 1rem;
+            background: var(--bg-code);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-primary);
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        .diagram-box.accent {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: rgba(108,182,196,0.08);
+        }
+
+        .diagram-box.dim {
+            color: var(--text-secondary);
+            border-color: var(--border);
+        }
+
+        .diagram-arrow {
+            color: var(--accent);
+            font-size: 1.3rem;
+            font-weight: 700;
+        }
+
+        /* Vertical flow diagrams */
+        .diagram-vertical {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.3rem;
+            margin: 1.5rem 0;
+            padding: 1.5rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+        }
+
+        .diagram-vertical .diagram-arrow {
+            font-size: 1.1rem;
+        }
+
+        /* Nested hierarchy diagram */
+        .hierarchy {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            margin: 1.5rem 0;
+            padding: 1.5rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+        }
+
+        .hierarchy-level {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .hierarchy-label {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            min-width: 80px;
+            text-align: right;
+        }
+
+        .hierarchy-items {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.35rem;
+        }
+
+        .hierarchy-item {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            background: var(--bg-code);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+        }
+
+        .hierarchy-item.accent {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: rgba(108,182,196,0.08);
+        }
+
+        /* Grid diagram */
+        .diagram-grid {
+            display: grid;
+            gap: 0.75rem;
+            margin: 1.5rem 0;
+            padding: 1.5rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+        }
+
+        .diagram-grid.cols-2 {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .diagram-grid.cols-3 {
+            grid-template-columns: 1fr 1fr 1fr;
+        }
+
+        .diagram-panel {
+            padding: 1rem;
+            background: var(--bg-code);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+        }
+
+        .diagram-panel.accent-border {
+            border-left: 3px solid var(--accent);
+        }
+
+        .diagram-panel h4 {
+            font-family: var(--font-display);
+            font-size: 1rem;
+            color: var(--accent);
+            margin-bottom: 0.5rem;
+        }
+
+        .diagram-panel p, .diagram-panel ul {
+            font-size: 0.85rem;
+        }
+
+        /* ── Callout Boxes ── */
+        .callout {
+            background: var(--bg-card);
+            border-left: 3px solid var(--accent);
+            border-radius: 0 8px 8px 0;
+            padding: 1rem 1.25rem;
+            margin: 1.25rem 0;
+        }
+
+        .callout p {
+            margin-bottom: 0;
+        }
+
+        .callout .callout-label {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 0.3rem;
+        }
+
+        /* ── Tier Visual ── */
+        .tier-visual {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin: 1.5rem 0;
+            padding: 1.5rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+        }
+
+        .tier-bar {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .tier-label {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            min-width: 90px;
+            text-align: right;
+        }
+
+        .tier-fill {
+            height: 32px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            padding: 0 0.75rem;
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            white-space: nowrap;
+            transition: width 0.6s ease;
+        }
+
+        .tier-cost {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            min-width: 70px;
+        }
+
+        /* ── Contents list ── */
+        .contents-list {
+            list-style: none;
+            padding-left: 0;
+            counter-reset: contents;
+        }
+
+        .contents-list li {
+            counter-increment: contents;
+            padding: 0.6rem 0;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .contents-list li:last-child {
+            border-bottom: none;
+        }
+
+        .contents-list li::before {
+            content: counter(contents, decimal-leading-zero);
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            color: var(--accent);
+            min-width: 2rem;
+        }
+
+        .contents-list a {
+            color: var(--text-primary);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .contents-list a:hover {
+            color: var(--accent);
+        }
+
+        /* ── Footer ── */
+        .footer {
+            text-align: center;
+            padding: 3rem 1.5rem;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            border-top: 1px solid var(--border);
+            max-width: var(--max-width);
+            margin: 0 auto;
+        }
+
+        .footer a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+
+        /* ── Responsive ── */
+        @media (max-width: 640px) {
+            .slide {
+                padding: 3rem 1rem;
+                min-height: auto;
+            }
+
+            .slide-number {
+                font-size: 3rem;
+                top: 1.5rem;
+                right: 1rem;
+            }
+
+            .slide h2 {
+                font-size: 1.5rem;
+            }
+
+            .diagram-grid.cols-2,
+            .diagram-grid.cols-3 {
+                grid-template-columns: 1fr;
+            }
+
+            .pipeline {
+                gap: 0.15rem;
+            }
+
+            .pipeline-step {
+                font-size: 0.6rem;
+                padding: 0.2rem 0.4rem;
+            }
+
+            .hero h1 {
+                font-size: 1.8rem;
+            }
+
+            table {
+                font-size: 0.78rem;
+            }
+
+            .tier-label {
+                min-width: 60px;
+                font-size: 0.65rem;
+            }
+
+            .tier-fill {
+                font-size: 0.6rem;
+                height: 26px;
+            }
+        }
+
+        /* ── Interactive controls (added for Local LLM series) ── */
+        .control-panel {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.25rem;
+            margin: 1.25rem 0;
+        }
+        .control-row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+        }
+        .control-row label {
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            min-width: 180px;
+        }
+        .control-row input[type="range"] {
+            flex: 1;
+            min-width: 160px;
+            accent-color: var(--accent);
+        }
+        .control-row input[type="number"],
+        .control-row select {
+            background: var(--bg-code);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            border-radius: 4px;
+            padding: 0.3rem 0.5rem;
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+        }
+        .control-row .val {
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            color: var(--accent);
+            min-width: 80px;
+            text-align: right;
+        }
+        .btn {
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            padding: 0.4rem 0.9rem;
+            background: var(--accent-dim);
+            color: var(--accent);
+            border: 1px solid var(--accent);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.15s ease;
+        }
+        .btn:hover { background: rgba(108,182,196,0.2); }
+        .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .btn.secondary {
+            background: var(--bg-code);
+            color: var(--text-secondary);
+            border-color: var(--border);
+        }
+        .result-box {
+            background: var(--bg-code);
+            border: 1px solid var(--border);
+            border-left: 3px solid var(--accent);
+            border-radius: 4px;
+            padding: 0.75rem 1rem;
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            color: var(--text-primary);
+            margin-top: 0.75rem;
+        }
+        .result-box .line-label { color: var(--text-secondary); }
+        .result-box .line-val   { color: var(--accent); font-weight: 600; }
+        .metric-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 0.5rem;
+            margin-top: 0.75rem;
+        }
+        .metric {
+            background: var(--bg-code);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 0.6rem 0.8rem;
+            text-align: center;
+        }
+        .metric .metric-label {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+        .metric .metric-value {
+            font-family: var(--font-display);
+            font-size: 1.25rem;
+            color: var(--accent);
+            font-weight: 600;
+            margin-top: 0.2rem;
+        }
+
+        /* Canvas / SVG containers */
+        .canvas-wrap {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.25rem 0;
+            overflow-x: auto;
+        }
+        .canvas-wrap canvas,
+        .canvas-wrap svg {
+            display: block;
+            margin: 0 auto;
+            max-width: 100%;
+        }
+
+        /* Small inline badge */
+        .badge {
+            display: inline-block;
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            padding: 0.1rem 0.45rem;
+            border-radius: 999px;
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            vertical-align: middle;
+            margin-left: 0.3rem;
+        }
+        .badge.ok    { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
+        .badge.warn  { border-color: #e3b174; color: #e3b174; background: rgba(227,177,116,0.08); }
+        .badge.bad   { border-color: #de805a; color: #de805a; background: rgba(222,128,90,0.08); }
+
+
+        /* ── LLM Inference Simulators additions ── */
+        .canvas-wrap canvas { image-rendering: auto; display: block; width: 100%; height: auto; }
+        .canvas-wrap svg { max-width: 100%; height: auto; }
+        .ladder { display: grid; gap: 0.4rem; margin: 1.25rem 0; }
+        .ladder-row {
+            display: grid; grid-template-columns: 11rem 1fr 7.5rem; gap: 0.75rem; align-items: center;
+            background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px;
+            padding: 0.55rem 0.85rem; font-size: 0.88rem;
+        }
+        .ladder-row .rung { font-family: var(--font-display); font-weight: 600; color: var(--accent); }
+        .ladder-row .speed { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-secondary); text-align: right; }
+        .res-list { list-style: none; padding: 0; margin: 0.75rem 0; }
+        .res-list li { padding: 0.6rem 0; border-bottom: 1px solid var(--border); font-size: 0.92rem; }
+        .res-list li:last-child { border-bottom: none; }
+        .res-list .what { color: var(--text-secondary); display: block; font-size: 0.86rem; margin-top: 0.15rem; }
+        .res-list a { color: var(--accent); text-decoration: none; }
+        .res-list a:hover { text-decoration: underline; }
+        .qa { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; margin: 0.6rem 0; padding: 0.2rem 1rem; }
+        .qa summary { cursor: pointer; padding: 0.6rem 0; font-weight: 600; }
+        .qa p, .qa ul { margin-bottom: 0.75rem; font-size: 0.92rem; }
+        .sim-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 0.4rem 1.25rem; }
+        .chart-pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem; }
+        .chart-title { font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.3rem; }
+        .slide a { color: var(--accent); }
+        @media (max-width: 640px) {
+            .ladder-row { grid-template-columns: 1fr; gap: 0.2rem; }
+            .ladder-row .speed { text-align: left; }
+        }
+        .concepts { background: var(--bg-card); border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: 6px; padding: 0.75rem 1rem; margin-top: 1.25rem; font-size: 0.88rem; }
+        .concepts p { margin: 0 0 0.4rem; color: var(--text-secondary); }
+        .concepts .chips { display: flex; flex-wrap: wrap; gap: 0.35rem 0.5rem; }
+        .concepts .chips a { border: 1px solid var(--border); border-radius: 999px; padding: 0.1rem 0.6rem; text-decoration: none; font-size: 0.82rem; }
+        .concepts .chips a:hover { border-color: var(--accent); }
+        .hero { overflow: hidden; }   /* the 600px glow must not widen the page on phones */
+        .chart-pair > *, .diagram-grid > *, .sim-grid > * { min-width: 0; }   /* let wide code scroll inside its column */
+        .slide p code, .slide li code, .slide td code { overflow-wrap: anywhere; }
+        @media (max-width: 640px) { .diagram-box { white-space: normal; max-width: 100%; } }   /* long boxes must wrap on phones */
+        /* FOptInf: keep long titles clear of the slide number on phones */
+        @media (max-width: 640px) { .slide h2 { padding-right: 3.6rem; } }
+        .sim-grid select, .sim-grid input[type="range"] { max-width: 100%; min-width: 0; }   /* long option labels must not spill into the next column */
+    </style>
+</head>
+<body>
+<!-- Generated by _cit05_build/build.py from Training_Transit_Sim c6de1f4 (examples/results.md and results.json). Edit the template, not this file. -->
+
+<header class="hero">
+    <div class="series-label">Compute in Transit &mdash; Presentation 05</div>
+    <h1>Training Transit, <span class="accent">Simulated</span></h1>
+    <p class="subtitle">Deck 04 measured how many steps each way of syncing gradients needs to reach a loss, and how many bytes it sends. This deck turns that into wall-clock time and energy, with a SimPy model of eight workers in one or more data centres, and a photonic link module that computes the band in transit, at a worker&rsquo;s port or at the switch. Where does the module help, and what would it need to break even?</p>
+
+    <div class="tags">
+        <span class="tag">SimPy model</span>
+        <span class="tag">Link kernel</span>
+        <span class="tag">Time to target loss</span>
+        <span class="tag">Hot spots</span>
+        <span class="tag">Break-even</span>
+        <span class="tag">In-switch summing</span>
+    </div>
+
+    <div class="pipeline">
+        <span class="pipeline-step">Steps to a loss (deck 04)</span>
+        <span class="pipeline-arrow">&rarr;</span>
+        <span class="pipeline-step">Bytes per sync</span>
+        <span class="pipeline-arrow">&rarr;</span>
+        <span class="pipeline-step">Links and module</span>
+        <span class="pipeline-arrow">&rarr;</span>
+        <span class="pipeline-step">Step time</span>
+        <span class="pipeline-arrow">&rarr;</span>
+        <span class="pipeline-step">Time and energy to target</span>
+    </div>
+</header>
+
+<section class="slide" id="slide-00">
+    <div class="slide-number">00</div>
+    <h2>Topics We'll Cover</h2>
+    <ul class="contents-list">
+        <li><a href="#slide-01">The Question</a></li>
+        <li><a href="#slide-02">The Model</a></li>
+        <li><a href="#slide-03">Six Variants and Their Wire Bytes</a></li>
+        <li><a href="#slide-04">The Module as a Link Kernel (Interactive)</a></li>
+        <li><a href="#slide-05">Time to Target Loss</a></li>
+        <li><a href="#slide-06">Hot Spots, and a Shared WAN</a></li>
+        <li><a href="#slide-07">Break-even against WAN Bandwidth (Interactive)</a></li>
+        <li><a href="#slide-08">Break-even in Module GFLOP/s, ENOB and Bit Planes</a></li>
+        <li><a href="#slide-09">Energy</a></li>
+        <li><a href="#slide-10">Extrapolations (Outside the Experiment)</a></li>
+        <li><a href="#slide-11">What It Means for a Photonic Link Module</a></li>
+        <li><a href="#slide-12">Limits, Next Steps, and What to Take Away</a></li>
+    </ul>
+    <div class="callout">
+        <div class="callout-label">Where this deck sits</div>
+        <p><a href="https://brendanjameslynskey.github.io/CiT_01_Compute_in_Transit/">Deck 01</a> sets the budget and the five tests for a photonic link module (<a href="https://arxiv.org/abs/2608.21536">arXiv:2608.21536</a>). <a href="https://brendanjameslynskey.github.io/CiT_02_Data_Movement_in_LLM_Training/">Deck 02</a> found the strongest candidate in training. <a href="https://brendanjameslynskey.github.io/CiT_04_Fixed_Band_Experiment/">Deck 04</a> ran the experiment: a fixed band computed in transit, with the optics emulated. This deck simulates what that means in time and energy. Code, tests and every number: <a href="https://github.com/BrendanJamesLynskey/Training_Transit_Sim">Training_Transit_Sim</a>, <a href="https://github.com/BrendanJamesLynskey/Training_Transit_Sim/blob/main/examples/results.md">examples/results.md</a>.</p>
+    </div>
+    <div class="concepts">
+        <p><strong>Concepts used here, and where they are explained.</strong> Each is defined, with links, in the <a href="https://brendanjameslynskey.github.io/LLM_Hub_Compute_in_Transit/#glossary">series glossary</a>.</p>
+        <div class="chips"><a href="https://brendanjameslynskey.github.io/LLM_Hub_Compute_in_Transit/#g-roofline" title="Compute time from the arithmetic and the device's peak rate times an achieved fraction (MFU).">Roofline compute</a><a href="https://brendanjameslynskey.github.io/LLM_Hub_Compute_in_Transit/#g-ringallreduce" title="A reduce-scatter then an all-gather round a ring; each worker sends 2(N-1)/N times the buffer.">Ring all-reduce</a><a href="https://brendanjameslynskey.github.io/LLM_Hub_Compute_in_Transit/#g-wirebytes" title="Payload is what a worker originates; wire bytes are what it sends in its collective.">Payload and wire bytes</a><a href="https://brendanjameslynskey.github.io/LLM_Hub_Compute_in_Transit/#g-linkkernel" title="A simulator abstraction for work done on a link: operations per byte, operation types, placement.">Link kernel</a><a href="https://brendanjameslynskey.github.io/LLM_Hub_Compute_in_Transit/#g-slowstage" title="A module's port, optics, compute budget and FPGA work as a pipeline: the slowest stage sets the rate.">Pipelined stages: the slowest wins</a><a href="https://brendanjameslynskey.github.io/LLM_Hub_Compute_in_Transit/#g-charged" title="Whether the optical transform's FLOPs count against the module's compute budget.">Transform charged or free</a><a href="https://brendanjameslynskey.github.io/LLM_Hub_Compute_in_Transit/#g-hotspot" title="The resource that holds the largest share of a step.">Hot spot</a><a href="https://brendanjameslynskey.github.io/LLM_Hub_Compute_in_Transit/#g-breakeven" title="The value of a parameter at which two variants reach the target loss in the same time.">Break-even</a><a href="https://brendanjameslynskey.github.io/LLM_Hub_Compute_in_Transit/#g-switchsum" title="The band computed and summed at the switch, with each worker's own band sent back to it.">In-switch summing with loopback</a><a href="https://brendanjameslynskey.github.io/LLM_Hub_Compute_in_Transit/#g-exactsteps" title="Every in-transit result is also given with the exact band's steps, because E's fewer steps rest on single seeds.">E's steps or the exact band's</a><a href="https://brendanjameslynskey.github.io/LLM_Hub_Compute_in_Transit/#g-ina" title="Summing workers' updates inside switches: the flows must meet.">In-network aggregation</a><a href="https://brendanjameslynskey.github.io/LLM_Hub_Compute_in_Transit/#g-enob" title="Effective number of bits: the precision a noisy analogue readout delivers.">ENOB</a></div>
+    </div>
+</section>
+
+<section class="slide" id="slide-01">
+    <div class="slide-number">01</div>
+    <h2>The Question</h2>
+    <p>Deck 04 counted steps and bytes. To reach a loss of <strong>3.158</strong> (the 2-D fixed band&rsquo;s final loss, the one loss that the dense, top-k, exact-band and optics variants all reach), AdamW and top-k needed <strong>400 steps</strong>, the exact fixed band <strong>2,667</strong>, and the band through the emulated optics (ENOB 8) <strong>1,800</strong>, from one seed. A step count is not a time: a band sends fewer bytes per step, and a module that computes it adds its own time.</p>
+    <div class="diagram-grid cols-2">
+        <div class="diagram-panel accent-border">
+            <h4>Does the convergence result turn into time and energy?</h4>
+            <ul>
+                <li>How long does each variant take to reach 3.158, on one data centre or several, over fast and slow WANs?</li>
+                <li>How much energy does it use, and how much of it is the module&rsquo;s?</li>
+            </ul>
+        </div>
+        <div class="diagram-panel accent-border">
+            <h4>Where does a link module help?</h4>
+            <ul>
+                <li>When is the module itself the bottleneck: its port, its optics, its compute budget?</li>
+                <li>What WAN bandwidth, compute budget or ENOB would it need to break even with AdamW, top-k, or the band computed on the GPU?</li>
+            </ul>
+        </div>
+    </div>
+    <div class="callout">
+        <div class="callout-label">Measured, assumed and illustrative</div>
+        <p>Steps to a loss are <strong>measured</strong> (one model size, 8 workers, 3,000 steps; A to C three seeds, every E run one seed). That the repaired optics band needs fewer steps than the exact band is a <strong>hypothesis</strong>, so every in-transit result is also given with the exact band&rsquo;s steps. Two variants were <strong>not run</strong> and reuse measured steps. Link presets, the MFU and most module coefficients are <strong>illustrative</strong> and labelled where they are used.</p>
+    </div>
+</section>
+
+<section class="slide" id="slide-02">
+    <div class="slide-number">02</div>
+    <h2>The Model</h2>
+    <p>W workers in D data centres, each worker an H100. A step is compute, then one sync of the update; the time to target is steps &times; step time. The diagram is the 2 DC &times; 4 topology; the model also runs 1 DC &times; 8 and 8 DC &times; 1.</p>
+    <div class="canvas-wrap">
+<svg viewBox="0 0 760 300" width="760" height="300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Two data centres of four workers each. Each worker has its own InfiniBand port to its data centre's switch; the two switches are joined by a WAN link. A pluggable module can sit at a worker's port (variant E) or a module at the switch (variant E prime).">
+<style>.dc{fill:#231e1a;stroke:#3a322b;stroke-width:1.5}.gpu{fill:#2b2520;stroke:#a2978b;stroke-width:1.2}.sw{fill:#2b2520;stroke:#6cb6c4;stroke-width:1.5}.ln{stroke:#a2978b;stroke-width:1.5}.wan{stroke:#6cb6c4;stroke-width:3}.mod{fill:#e3b174}.mods{fill:#6cb6c4}.t{fill:#efe8dc;font-family:'Geist Mono',monospace;font-size:11px}.s{fill:#a2978b;font-family:'Geist Mono',monospace;font-size:10px}.h{fill:#6cb6c4;font-family:'Geist Mono',monospace;font-size:12px;font-weight:600}</style>
+<rect x="10" y="10" width="330" height="230" rx="10" class="dc"/><text x="24" y="32" class="h">Data centre 1</text>
+<rect x="420" y="10" width="330" height="230" rx="10" class="dc"/><text x="434" y="32" class="h">Data centre 2</text>
+<g>
+<rect x="30" y="50" width="62" height="40" rx="5" class="gpu"/><text x="61" y="75" class="t" text-anchor="middle">GPU 0</text>
+<rect x="105" y="50" width="62" height="40" rx="5" class="gpu"/><text x="136" y="75" class="t" text-anchor="middle">GPU 1</text>
+<rect x="180" y="50" width="62" height="40" rx="5" class="gpu"/><text x="211" y="75" class="t" text-anchor="middle">GPU 2</text>
+<rect x="255" y="50" width="62" height="40" rx="5" class="gpu"/><text x="286" y="75" class="t" text-anchor="middle">GPU 3</text>
+<line x1="61" y1="90" x2="175" y2="170" class="ln"/><line x1="136" y1="90" x2="175" y2="170" class="ln"/><line x1="211" y1="90" x2="175" y2="170" class="ln"/><line x1="286" y1="90" x2="175" y2="170" class="ln"/>
+<rect x="55" y="96" width="12" height="12" class="mod"/>
+<rect x="115" y="170" width="120" height="36" rx="6" class="sw"/><text x="175" y="193" class="t" text-anchor="middle">switch</text>
+<rect x="225" y="164" width="14" height="14" class="mods"/>
+</g>
+<g>
+<rect x="440" y="50" width="62" height="40" rx="5" class="gpu"/><text x="471" y="75" class="t" text-anchor="middle">GPU 4</text>
+<rect x="515" y="50" width="62" height="40" rx="5" class="gpu"/><text x="546" y="75" class="t" text-anchor="middle">GPU 5</text>
+<rect x="590" y="50" width="62" height="40" rx="5" class="gpu"/><text x="621" y="75" class="t" text-anchor="middle">GPU 6</text>
+<rect x="665" y="50" width="62" height="40" rx="5" class="gpu"/><text x="696" y="75" class="t" text-anchor="middle">GPU 7</text>
+<line x1="471" y1="90" x2="585" y2="170" class="ln"/><line x1="546" y1="90" x2="585" y2="170" class="ln"/><line x1="621" y1="90" x2="585" y2="170" class="ln"/><line x1="696" y1="90" x2="585" y2="170" class="ln"/>
+<rect x="525" y="170" width="120" height="36" rx="6" class="sw"/><text x="585" y="193" class="t" text-anchor="middle">switch</text>
+<rect x="635" y="164" width="14" height="14" class="mods"/>
+</g>
+<line x1="235" y1="200" x2="525" y2="200" class="wan"/>
+<text x="380" y="192" class="t" text-anchor="middle">WAN (inter-DC)</text>
+<text x="380" y="222" class="s" text-anchor="middle">100 GbE, 25 GbE, 400G, 800G or 8 Gb/s</text>
+<text x="24" y="232" class="s">intra-DC: InfiniBand NDR 400G, 50 GB/s per worker</text>
+<rect x="20" y="262" width="12" height="12" class="mod"/><text x="40" y="273" class="t">pluggable module at a worker&#8217;s port (E)</text>
+<rect x="400" y="262" width="12" height="12" class="mods"/><text x="420" y="273" class="t">module at the switch (E&#8242;, hypothetical)</text>
+</svg>
+    </div>
+    <div class="diagram-grid cols-2">
+        <div class="diagram-panel accent-border">
+            <h4>Compute: a roofline</h4>
+            <p>6 &times; parameters &times; tokens per worker per step, divided by the device&rsquo;s peak rate &times; MFU. 15,833,472 parameters, 2,048 tokens per worker per step (8 sequences of 256), MFU 0.40 (illustrative). The top-k and band variants add their forward transform on the GPU.</p>
+        </div>
+        <div class="diagram-panel accent-border">
+            <h4>The sync: hierarchical ring collectives</h4>
+            <p>Intra-DC, then inter-DC, then intra-DC. A ring all-reduce sends 2(N&minus;1)/N &times; B per worker; a ring all-gather sends (N&minus;1) &times; P. Each link direction and each module is a SimPy resource; a sync runs round by round, each round paying latency + bytes / bandwidth.</p>
+        </div>
+    </div>
+    <p style="font-size:0.85rem;">Devices and link presets are imported from <a href="https://github.com/BrendanJamesLynskey/Disaggregated_Inference_Sim">Disaggregated_Inference_Sim</a> at 69ffd2b, not copied. The 400G and 800G presets and the 8 Gb/s WAN share (the 100 GbE preset at 1 GB/s) are illustrative. At zero background load the simulated step equals an independent closed form to 1e-12 (a test); slide 06 shows what only the discrete-event model can see. Source: <a href="https://github.com/BrendanJamesLynskey/Training_Transit_Sim/blob/main/examples/results.md">results.md</a>, header and section 2.</p>
+</section>
+
+<section class="slide" id="slide-03">
+    <div class="slide-number">03</div>
+    <h2>Six Variants and Their Wire Bytes</h2>
+    <p>Four variants were measured in deck 04&rsquo;s experiment. Two are hypothetical: every worker sends the same band positions and DeMo averages before taking the sign, so <strong>summing</strong> the bands gives the same update as gathering them, and C&prime; and E&prime; reuse C&rsquo;s and E&rsquo;s steps. They were not run.</p>
+    <div class="table-wrap">
+        <table>
+            <tr><th>Variant</th><th>Payload / step (bytes)</th><th>Model wire / step (bytes)</th><th>Experiment wire / step (bytes)</th></tr>
+            <tr><td>A&nbsp; AdamW, dense ring all-reduce</td><td>31,666,944</td><td>55,417,152</td><td>55,417,152</td></tr>
+            <tr><td>B&nbsp; DeMo top-k, all-gather</td><td>3,957,960</td><td>27,705,720</td><td>27,705,720</td></tr>
+            <tr><td>C&nbsp; fixed band on the GPU, all-gather</td><td>1,979,184</td><td>13,854,288</td><td>13,854,288</td></tr>
+            <tr><td>C&prime;&nbsp; fixed band on the GPU, ring all-reduce (hypothetical)</td><td>1,979,184</td><td>3,463,572</td><td>n/a (not run)</td></tr>
+            <tr><td>E&nbsp; band in transit (pluggable), all-gather</td><td>1,979,184</td><td>13,854,288</td><td>13,854,288</td></tr>
+            <tr><td>E&prime;&nbsp; band in transit, summed at the switch (hypothetical)</td><td>1,979,184</td><td>31,666,944</td><td>n/a (not run)</td></tr>
+        </table>
+        </div>
+    <p style="font-size:0.85rem;">Source: results.md, section 1. <em>Model wire</em> = bytes a worker sends in the model&rsquo;s collective with 8 workers in one DC; for A, B, C and E it equals the experiment&rsquo;s wire column exactly (a test).</p>
+    <div class="diagram-grid cols-2">
+        <div class="diagram-panel accent-border">
+            <h4>E: the band in a pluggable</h4>
+            <p>Each worker&rsquo;s dense delta goes through its own module, which computes the band; the band is then <strong>all-gathered</strong>, so the wire bytes are C&rsquo;s. A pluggable sees one flow, so it cannot sum.</p>
+        </div>
+        <div class="diagram-panel accent-border">
+            <h4>E&prime;: the band computed and summed at the switch</h4>
+            <p>Each worker sends its dense delta (2 bytes per parameter) up to its switch, where modules compute and sum the band; only the band sum crosses the WAN. The switch also sends each worker its own optical band back (a <strong>loopback</strong>), because deck 04&rsquo;s fix feeds back the values actually sent, which an all-reduce would not return. C&prime; is the same summation done by an ordinary ring all-reduce at the GPUs, no module.</p>
+        </div>
+    </div>
+</section>
+
+<section class="slide" id="slide-04">
+    <div class="slide-number">04</div>
+    <h2>The Module as a Link Kernel (Interactive)</h2>
+    <p>The module is modelled as a <strong>link kernel</strong>: it declares operations per byte by type (FFT, add, multiply, MAC, floating-point MAC, modular, gather), latency, energy per bit and placement. A stream goes through four <strong>pipelined</strong> stages, and the slowest sets the rate:</p>
+    <div class="diagram-flow">
+        <span class="diagram-box">port: 25 GB/s (QSFP56)</span>
+        <span class="diagram-arrow">&rarr;</span>
+        <span class="diagram-box accent">optics: 4 &times; 14 Gb/s NRZ, one pass per bit plane</span>
+        <span class="diagram-arrow">&rarr;</span>
+        <span class="diagram-box">compute budget: 10 to 99 GFLOP/s</span>
+        <span class="diagram-arrow">&rarr;</span>
+        <span class="diagram-box">FPGA stage (illustrative rate)</span>
+    </div>
+    <ul>
+        <li><strong>Optics:</strong> with binary (NRZ) input, a value quantised to 8 bits takes 8 optical passes, so the bit planes set throughput as well as accuracy. 4 &times; 14 Gb/s is 56 Gb/s, or 7 GB/s (derived: 56 &divide; 8): the series&rsquo; arithmetic from the paper, not a figure it states.</li>
+        <li><strong>Compute budget:</strong> the series&rsquo; reading of the paper&rsquo;s &ldquo;tens of GFLOPs&rdquo;. Whether the optical transform is <strong>charged</strong> against it is not public, so it is a switch: <strong>[low]</strong> 10 GFLOP/s charged, <strong>[high]</strong> 99 GFLOP/s charged, <strong>[free]</strong> not charged.</li>
+        <li><strong>FPGA stage:</strong> modular arithmetic runs in the FPGA driver logic in the paper; here it also quantises, tracks the full scale and recombines the bit planes.</li>
+    </ul>
+
+    <div class="control-panel">
+        <div class="sim-grid">
+            <div class="control-row"><label for="mk-g">Compute budget (GFLOP/s)</label><input type="range" id="mk-g" min="0" max="3" step="0.005" value="1.9956"><span class="val" id="mk-g-val">99</span></div>
+            <div class="control-row"><label for="mk-c">Optical transform</label><select id="mk-c"><option value="1" selected>charged against the budget</option><option value="0">not charged (free)</option></select></div>
+            <div class="control-row"><label>Presets</label><button class="btn secondary" id="mk-low">[low] 10</button> <button class="btn secondary" id="mk-high">[high] 99</button> <button class="btn secondary" id="mk-unb">140.0</button></div>
+        </div>
+        <div class="tier-visual" id="mk-bars" style="margin-bottom:0;"></div>
+        <p id="mk-note" style="font-size:0.85rem; margin-top:0.6rem; margin-bottom:0;"></p>
+    </div>
+    <script>
+    (function(){
+        const $ = id => document.getElementById(id);
+        // one worker's dense delta through the module, ms per stage, from results.json (module_stages_dense, [high])
+        const S = {"port":1.26668,"optics":2.2619200000000004,"compute99":3.19868,"fpga":0.791674};
+        let G = 99;
+        const fmt = (x, d) => x.toLocaleString('en-GB', { minimumFractionDigits: d, maximumFractionDigits: d });
+        function update() {
+            const charged = $('mk-c').value === '1';
+            const st = [['port', S.port], ['optics', S.optics], ['compute budget', charged ? S.compute99 * 99 / G : 0], ['FPGA', S.fpga]];
+            const top = st.reduce((a, b) => b[1] > a[1] ? b : a);
+            const max = Math.max(...st.map(s => s[1]), S.compute99 * 99 / 10);
+            $('mk-g-val').textContent = fmt(G, G < 100 ? 1 : 0);
+            $('mk-bars').innerHTML = st.map(([name, ms]) => {
+                const sel = name === top[0];
+                const w = Math.max(2, 100 * ms / max);
+                return '<div class="tier-bar"><span class="tier-label" style="min-width:110px;">' + name + '</span><div style="flex:1;"><div class="tier-fill" style="width:' + w.toFixed(1) +
+                    '%; background:' + (sel ? 'var(--accent-dim)' : 'var(--bg-code)') + '; border:1px solid ' + (sel ? 'var(--accent)' : 'var(--border)') +
+                    '; color:' + (sel ? 'var(--accent)' : 'var(--text-secondary)') + ';">' + fmt(ms, 3) + ' ms</div></div><span class="tier-cost">' + (sel ? 'binds' : '') + '</span></div>';
+            }).join('');
+            $('mk-note').textContent = 'One worker’s dense delta (15,833,472 BF16 values) through a module at 8 planes. The ' + top[0] + ' stage binds at ' + fmt(top[1], 3) +
+                ' ms. Stage times are results.md section 6’s at [high]; the compute stage scales as 1 / budget (derived: ' + fmt(S.compute99, 3) + ' ms × 99 / budget), so it binds below 140.0 GFLOP/s, results.md section 7b’s figure, above the 10 to 99 bracket.';
+        }
+        function setG(g) { G = g; $('mk-g').value = Math.log10(g); update(); }
+        $('mk-g').addEventListener('input', () => { G = Math.pow(10, +$('mk-g').value); update(); });
+        $('mk-c').addEventListener('change', update);
+        $('mk-low').addEventListener('click', () => setG(10));
+        $('mk-high').addEventListener('click', () => setG(99));
+        $('mk-unb').addEventListener('click', () => setG(140.001));
+        update();
+    })();
+    </script>
+    <p style="font-size:0.85rem;">From the paper: 9.7 W static, the QSFP56 port, 4 &times; 14 GBaud NRZ. From the developer&rsquo;s website: 2.76 pJ/bit (45 nm, excluding the laser). Illustrative: laser power, FPGA rate and work per value, latency, and the 10 and 99 GFLOP/s bracket. Source: results.md, sections 6 and 7b.</p>
+</section>
+
+<section class="slide" id="slide-05">
+    <div class="slide-number">05</div>
+    <h2>Time to Target Loss</h2>
+    <p>Seconds to reach 3.158 = steps &times; step time, on six of the eight topologies (results.md has 400G and 800G too). 8 workers, H100s at MFU 0.40.</p>
+    <div class="table-wrap">
+        <table>
+            <tr><th>Variant</th><th>Steps</th><th>1 DC &times; 8</th><th>2 DC &times; 4, 100 GbE</th><th>2 DC &times; 4, 25 GbE</th><th>8 DC &times; 1, 100 GbE</th><th>8 DC &times; 1, 25 GbE</th><th>2 DC &times; 4, 8 Gb/s</th></tr>
+            <tr><td>A&nbsp; AdamW, dense ring all-reduce</td><td>400</td><td>0.70</td><td>1.63</td><td>4.67</td><td>2.08</td><td>7.40</td><td>13.28</td></tr>
+            <tr><td>B&nbsp; DeMo top-k, all-gather</td><td>400</td><td>0.45</td><td>0.93</td><td>2.45</td><td>1.14</td><td>3.80</td><td>6.75</td></tr>
+            <tr><td>C&nbsp; fixed band on the GPU, all-gather</td><td>2,667</td><td>2.24</td><td>3.85</td><td>8.92</td><td>4.64</td><td>13.51</td><td>23.27</td></tr>
+            <tr><td>E&nbsp; band in transit (pluggable), all-gather [low]</td><td>1,800</td><td>59.01</td><td>60.03</td><td>63.45</td><td>60.13</td><td>66.12</td><td>73.14</td></tr>
+            <tr><td>E&nbsp; band in transit (pluggable), all-gather [high]</td><td>1,800</td><td>7.77</td><td>8.78</td><td>12.20</td><td>8.89</td><td>14.88</td><td>21.89</td></tr>
+            <tr><td>E&nbsp; band in transit (pluggable), all-gather [free]</td><td>1,800</td><td>6.08</td><td>7.10</td><td>10.52</td><td>7.21</td><td>13.19</td><td>20.21</td></tr>
+            <tr><td>C&prime;&nbsp; fixed band on the GPU, ring all-reduce (hypothetical)</td><td>2,667</td><td>1.87</td><td>2.16</td><td>3.43</td><td>2.80</td><td>5.02</td><td>7.02</td></tr>
+            <tr><td>E&prime;&nbsp; band in transit, summed at the switch (hypothetical) [low]</td><td>1,800</td><td>59.29</td><td>59.64</td><td>60.49</td><td>60.28</td><td>61.78</td><td>62.91</td></tr>
+            <tr><td>E&prime;&nbsp; band in transit, summed at the switch (hypothetical) [high]</td><td>1,800</td><td>8.04</td><td>8.39</td><td>9.25</td><td>9.04</td><td>10.54</td><td>11.67</td></tr>
+            <tr><td>E&prime;&nbsp; band in transit, summed at the switch (hypothetical) [free]</td><td>1,800</td><td>6.35</td><td>6.71</td><td>7.56</td><td>7.35</td><td>8.85</td><td>9.98</td></tr>
+        </table>
+        </div>
+    <p style="font-size:0.85rem;">Source: results.md, section 2. [low] 10 GFLOP/s charged; [high] 99 GFLOP/s charged; [free] transform not charged. The 8 Gb/s WAN is illustrative.</p>
+    <ul>
+        <li><strong>Top-k (B) is the fastest to 3.158 on every topology</strong>: 0.93 s on 2 DC &times; 4 over 100 GbE, against 1.63 s for AdamW.</li>
+        <li><strong>A pluggable with the transform charged at 10 GFLOP/s takes about a minute</strong> (59.01 to 73.14 s) wherever it is: the module, not the network, sets its time.</li>
+        <li><strong>The band summed rather than gathered is the band&rsquo;s best case.</strong> C&prime; (no module) beats AdamW on the 25 GbE and 8 Gb/s WANs; E&prime; [free] beats AdamW only on the 8 Gb/s WAN (9.98 s against 13.28 s), and C&prime; is faster still there (7.02 s).</li>
+    </ul>
+    <div class="callout">
+        <div class="callout-label">Without the hypothesis</div>
+        <p>E&rsquo;s 1,800 steps come from one seed. With the exact band&rsquo;s steps (C, 2,667, three seeds) every in-transit time grows by about half (2 DC &times; 4, 100 GbE):</p>
+    </div>
+    <div class="table-wrap">
+        <table>
+            <tr><th>Variant</th><th>Steps (E, ENOB 8)</th><th>Time (s)</th><th>Steps (C, exact band)</th><th>Time (s)</th></tr>
+            <tr><td>E&nbsp; band in transit (pluggable), all-gather [low]</td><td>1,800</td><td>60.03</td><td>2,667</td><td>88.94</td></tr>
+            <tr><td>E&nbsp; band in transit (pluggable), all-gather [high]</td><td>1,800</td><td>8.78</td><td>2,667</td><td>13.01</td></tr>
+            <tr><td>E&nbsp; band in transit (pluggable), all-gather [free]</td><td>1,800</td><td>7.10</td><td>2,667</td><td>10.52</td></tr>
+            <tr><td>E&prime;&nbsp; band in transit, summed at the switch (hypothetical) [low]</td><td>1,800</td><td>59.64</td><td>2,667</td><td>88.36</td></tr>
+            <tr><td>E&prime;&nbsp; band in transit, summed at the switch (hypothetical) [high]</td><td>1,800</td><td>8.39</td><td>2,667</td><td>12.44</td></tr>
+            <tr><td>E&prime;&nbsp; band in transit, summed at the switch (hypothetical) [free]</td><td>1,800</td><td>6.71</td><td>2,667</td><td>9.94</td></tr>
+        </table>
+        </div>
+</section>
+
+<section class="slide" id="slide-06">
+    <div class="slide-number">06</div>
+    <h2>Hot Spots, and a Shared WAN</h2>
+    <p>The share of the step each resource holds on 2 DC &times; 4, 100 GbE. Each round of the sync is charged to its slowest operation; the module&rsquo;s time is split by its binding stage.</p>
+    <div class="table-wrap">
+        <table>
+            <tr><th>Variant</th><th>compute</th><th>intra-DC link</th><th>inter-DC link</th><th>module port</th><th>module optics</th><th>module compute</th><th>FPGA</th></tr>
+            <tr><td>A&nbsp; AdamW, dense ring all-reduce</td><td>12.1%</td><td>24.8%</td><td>63.1%</td><td>0.0%</td><td>0.0%</td><td>0.0%</td><td>0.0%</td></tr>
+            <tr><td>B&nbsp; DeMo top-k, all-gather</td><td>21.3%</td><td>23.1%</td><td>55.6%</td><td>0.0%</td><td>0.0%</td><td>0.0%</td><td>0.0%</td></tr>
+            <tr><td>C&nbsp; fixed band on the GPU, all-gather</td><td>34.1%</td><td>20.6%</td><td>45.3%</td><td>0.0%</td><td>0.0%</td><td>0.0%</td><td>0.0%</td></tr>
+            <tr><td>E&nbsp; band in transit (pluggable), all-gather [low]</td><td>1.5%</td><td>0.0%</td><td>2.0%</td><td>1.6%</td><td>0.0%</td><td>95.0%</td><td>0.0%</td></tr>
+            <tr><td>E&nbsp; band in transit (pluggable), all-gather [high]</td><td>10.1%</td><td>0.0%</td><td>13.4%</td><td>11.0%</td><td>0.0%</td><td>65.6%</td><td>0.0%</td></tr>
+            <tr><td>E&nbsp; band in transit (pluggable), all-gather [free]</td><td>12.5%</td><td>0.0%</td><td>16.6%</td><td>13.6%</td><td>57.4%</td><td>0.0%</td><td>0.0%</td></tr>
+            <tr><td>C&prime;&nbsp; fixed band on the GPU, ring all-reduce (hypothetical)</td><td>60.8%</td><td>14.7%</td><td>24.5%</td><td>0.0%</td><td>0.0%</td><td>0.0%</td><td>0.0%</td></tr>
+            <tr><td>E&prime;&nbsp; band in transit, summed at the switch (hypothetical) [low]</td><td>1.5%</td><td>2.1%</td><td>0.6%</td><td>0.2%</td><td>0.0%</td><td>95.6%</td><td>0.0%</td></tr>
+            <tr><td>E&prime;&nbsp; band in transit, summed at the switch (hypothetical) [high]</td><td>10.5%</td><td>14.9%</td><td>4.3%</td><td>1.7%</td><td>0.0%</td><td>68.6%</td><td>0.0%</td></tr>
+            <tr><td>E&prime;&nbsp; band in transit, summed at the switch (hypothetical) [free]</td><td>13.2%</td><td>18.6%</td><td>5.3%</td><td>2.2%</td><td>60.7%</td><td>0.0%</td><td>0.0%</td></tr>
+        </table>
+        </div>
+    <p style="font-size:0.85rem;">Source: results.md, section 6.</p>
+    <ul>
+        <li><strong>AdamW&rsquo;s step is mostly communication:</strong> compute is 12.1%, the inter-DC link 63.1%. That is the room compression has to work in.</li>
+        <li><strong>With the transform charged the module is the hot spot:</strong> module compute holds 95.0% of E&rsquo;s step at [low] and 65.6% at [high]. With it free, the <strong>optics</strong> binds (57.4%): eight passes per value.</li>
+        <li><strong>A pluggable also caps its worker&rsquo;s port:</strong> module port holds 13.6% of E&rsquo;s [free] step, because a 25 GB/s QSFP56 module sits on a 50 GB/s port.</li>
+        <li><strong>C&prime; is compute-bound</strong> (60.8%): summing the band leaves little to communicate.</li>
+    </ul>
+    <p><strong>A shared WAN.</strong> With other jobs&rsquo; traffic on the inter-DC link (Poisson, 1 MB transfers, illustrative), the sync queues; the closed form cannot see this, the discrete-event model can. Mean step over 200 syncs, ms:</p>
+    <div class="table-wrap">
+        <table>
+            <tr><th>Variant</th><th>Closed form (ms)</th><th>Load 0</th><th>Load 0.3</th><th>Load 0.6</th><th>Load 0.9</th><th>WAN busy at 0.9, incl. background</th></tr>
+            <tr><td>A&nbsp; AdamW, dense ring all-reduce</td><td>4.075</td><td>4.075</td><td>4.609</td><td>6.617</td><td>26.291</td><td>100.0%</td></tr>
+            <tr><td>B&nbsp; DeMo top-k, all-gather</td><td>2.315</td><td>2.315</td><td>2.354</td><td>3.362</td><td>12.929</td><td>100.0%</td></tr>
+            <tr><td>C&nbsp; fixed band on the GPU, all-gather</td><td>1.443</td><td>1.443</td><td>1.479</td><td>1.840</td><td>6.552</td><td>100.0%</td></tr>
+            <tr><td>C&prime;&nbsp; fixed band on the GPU, ring all-reduce (hypothetical)</td><td>0.810</td><td>0.810</td><td>0.894</td><td>1.078</td><td>2.975</td><td>97.3%</td></tr>
+            <tr><td>E&prime;&nbsp; band in transit, summed at the switch (hypothetical) [free]</td><td>3.726</td><td>3.726</td><td>3.815</td><td>3.977</td><td>5.442</td><td>94.3%</td></tr>
+        </table>
+        </div>
+    <p style="font-size:0.85rem;">Source: results.md, section 9. At load 0.9 AdamW&rsquo;s step grows from 4.075 to 26.291 ms; E&prime; [free], which sends only the band sum over the WAN, from 3.726 to 5.442 ms.</p>
+</section>
+
+<section class="slide" id="slide-07">
+    <div class="slide-number">07</div>
+    <h2>Break-even against WAN Bandwidth (Interactive)</h2>
+    <p>Time to 3.158 on 2 DC &times; 4 as the inter-DC bandwidth changes (the 100 GbE preset&rsquo;s latency throughout). Move the slider, or pick a recorded point; switch between E&rsquo;s steps (the hypothesis) and the exact band&rsquo;s.</p>
+    <div class="control-panel">
+        <div class="sim-grid">
+            <div class="control-row"><label for="be-bw">Inter-DC bandwidth</label><input type="range" id="be-bw" min="-1" max="3" step="0.005" value="1.0969"><span class="val" id="be-bw-val"></span></div>
+            <div class="control-row"><label for="be-mod">Module</label><select id="be-mod"><option value="free" selected>[free] transform not charged</option><option value="high">[high] 99 GFLOP/s, charged</option></select></div>
+            <div class="control-row"><label for="be-steps">Steps for E and E&prime;</label><select id="be-steps"><option value="e" selected>E&rsquo;s, ENOB 8 (one seed: hypothesis)</option><option value="c">the exact band&rsquo;s (C, three seeds)</option></select></div>
+            <div class="control-row"><label>Recorded points</label><span><button class="btn secondary" data-bw="1e9">8 Gb/s</button> <button class="btn secondary" data-bw="3.125e9">25 GbE</button> <button class="btn secondary" data-bw="12.5e9">100 GbE</button> <button class="btn secondary" data-bw="50e9">400G</button> <button class="btn secondary" data-bw="100e9">800G</button></span></div>
+        </div>
+        <div class="canvas-wrap" style="margin:0.75rem 0;"><svg id="be-svg" viewBox="0 0 760 380" width="760" height="380" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Time to the target loss against inter-DC bandwidth for each variant, log-log"></svg></div>
+        <div id="be-out"></div>
+        <p id="be-note" style="font-size:0.85rem; margin-top:0.6rem; margin-bottom:0;"></p>
+    </div>
+    <script>
+    (function(){
+        const $ = id => document.getElementById(id);
+        // per variant on 2 DC x 4: step(bw) = a + k(bw); a from results.json's 100 GbE step, k the WAN term of the sync
+        const D = {"A":{"kind":"ar","bytes":31666944.0,"a":0.0015418244799999996,"steps":400.0,"exact":400.0},"B":{"kind":"ag","bytes":3957960.0,"a":0.0010480528,"steps":400.0,"exact":400.0},"C":{"kind":"ag","bytes":1979184.0,"a":0.00081012112,"steps":2667.0,"exact":2667.0},"Cp":{"kind":"ar","bytes":1979184.0,"a":0.00065199028,"steps":2667.0,"exact":2667.0},"E_free":{"kind":"plug","bytes":1979184.0,"a":0.00330974112,"steps":1800.0,"exact":2667.0},"E_high":{"kind":"plug","bytes":1979184.0,"a":0.00424650112,"steps":1800.0,"exact":2667.0},"Ep_free":{"kind":"ar","bytes":1979184.0,"a":0.00356782528,"steps":1800.0,"exact":2667.0},"Ep_high":{"kind":"ar","bytes":1979184.0,"a":0.00450458528,"steps":1800.0,"exact":2667.0}};
+        const LINES = [
+            ['A', 'A  AdamW, all-reduce', '#efe8dc', ''],
+            ['B', 'B  top-k, all-gather', '#a2978b', ''],
+            ['C', 'C  band on the GPU, all-gather', '#a2978b', '3 4'],
+            ['Cp', 'C′ band on the GPU, all-reduce', '#97cdc6', '7 4'],
+            ['E', 'E  band in a pluggable', '#e3b174', ''],
+            ['Ep', 'E′ band summed at the switch', '#6cb6c4', ''],
+        ];
+        let BW = 12.5e9;
+        const fmt = (x, d) => x.toLocaleString('en-GB', { minimumFractionDigits: d, maximumFractionDigits: d });
+        const sig = x => Number(x.toPrecision(3)).toLocaleString('en-GB', { maximumFractionDigits: 6 });
+        function k(v, bw) {
+            if (v.kind === 'ar') return v.bytes / bw;
+            if (v.kind === 'ag') return 4 * v.bytes / bw;
+            return Math.max(4 * v.bytes / bw, v.bytes / 25e9);
+        }
+        function key(id) { const mod = $('be-mod').value; return (id === 'E' || id === 'Ep') ? id + '_' + mod : id; }
+        function T(id, bw) {
+            const v = D[key(id)];
+            const exact = $('be-steps').value === 'c' && (id === 'E' || id === 'Ep');
+            return (exact ? v.exact : v.steps) * (v.a + k(v, bw));
+        }
+        function cross(x, y) {
+            const f = bw => T(x, bw) - T(y, bw);
+            let a = 1e8, b = 1e12; const fa = f(a), fb = f(b);
+            if ((fa > 0) === (fb > 0)) return null;
+            for (let i = 0; i < 200; i++) { const m = Math.sqrt(a * b); if ((f(m) > 0) === (fa > 0)) a = m; else b = m; }
+            return Math.sqrt(a * b);
+        }
+        const X0 = 78, X1 = 740, Y0 = 20, Y1 = 330;
+        const xs = bw => X0 + (X1 - X0) * (Math.log10(bw / 1e9) + 1) / 4;
+        const ys = t => Y1 - (Y1 - Y0) * (Math.log10(t) + 1) / 4;
+        function draw() {
+            let s = '<style>.g{stroke:#3a322b;stroke-width:1}.ax{fill:#a2978b;font-family:Geist Mono,monospace;font-size:10.5px}.lg{fill:#efe8dc;font-family:Geist Mono,monospace;font-size:10.5px}</style>';
+            [0.1, 1, 10, 100, 1000].forEach(g => { const x = xs(g * 1e9); s += '<line x1="' + x + '" y1="' + Y0 + '" x2="' + x + '" y2="' + Y1 + '" class="g"/><text x="' + x + '" y="' + (Y1 + 16) + '" class="ax" text-anchor="middle">' + g + '</text>'; });
+            [0.1, 1, 10, 100, 1000].forEach(t => { const y = ys(t); s += '<line x1="' + X0 + '" y1="' + y + '" x2="' + X1 + '" y2="' + y + '" class="g"/><text x="' + (X0 - 6) + '" y="' + (y + 4) + '" class="ax" text-anchor="end">' + t + '</text>'; });
+            s += '<text x="' + ((X0 + X1) / 2) + '" y="' + (Y1 + 34) + '" class="ax" text-anchor="middle">inter-DC bandwidth (GB/s, log)</text>';
+            s += '<text x="16" y="' + ((Y0 + Y1) / 2) + '" class="ax" text-anchor="middle" transform="rotate(-90 16 ' + ((Y0 + Y1) / 2) + ')">seconds to 3.158 (log)</text>';
+            LINES.forEach(([id, , col, dash]) => {
+                let p = '';
+                for (let i = 0; i <= 160; i++) { const bw = Math.pow(10, 8 + 4 * i / 160); const t = Math.min(Math.max(T(id, bw), 0.1), 1000); p += (i ? ' L' : 'M') + xs(bw).toFixed(1) + ' ' + ys(t).toFixed(1); }
+                s += '<path d="' + p + '" fill="none" stroke="' + col + '" stroke-width="' + (id === 'Ep' ? 2.6 : 1.8) + '"' + (dash ? ' stroke-dasharray="' + dash + '"' : '') + '/>';
+            });
+            const x = xs(BW);
+            s += '<line x1="' + x + '" y1="' + Y0 + '" x2="' + x + '" y2="' + Y1 + '" stroke="#6cb6c4" stroke-width="1" stroke-dasharray="2 3"/>';
+            LINES.forEach(([id, , col]) => { s += '<circle cx="' + x + '" cy="' + ys(Math.min(Math.max(T(id, BW), 0.1), 1000)) + '" r="4" fill="' + col + '" stroke="#231e1a" stroke-width="1.5"/>'; });
+            // legend on a background box
+            s += '<rect x="' + (X1 - 262) + '" y="' + (Y0 + 6) + '" width="256" height="' + (LINES.length * 16 + 10) + '" rx="5" fill="#231e1a" stroke="#3a322b" opacity="0.95"/>';
+            LINES.forEach(([, name, col, dash], i) => {
+                const y = Y0 + 20 + i * 16;
+                s += '<line x1="' + (X1 - 252) + '" y1="' + (y - 4) + '" x2="' + (X1 - 228) + '" y2="' + (y - 4) + '" stroke="' + col + '" stroke-width="2.2"' + (dash ? ' stroke-dasharray="' + dash + '"' : '') + '/><text x="' + (X1 - 222) + '" y="' + y + '" class="lg">' + name + '</text>';
+            });
+            $('be-svg').innerHTML = s;
+        }
+        function update() {
+            $('be-bw-val').textContent = sig(BW / 1e9) + ' GB/s (' + sig(BW * 8 / 1e9) + ' Gb/s)';
+            const rows = LINES.map(([id, name]) => [name, T(id, BW)]);
+            const best = rows.reduce((a, b) => b[1] < a[1] ? b : a);
+            $('be-out').innerHTML = '<div class="metric-grid">' + rows.map(([n, t]) => '<div class="metric"' + (n === best[0] ? ' style="border-color:var(--accent);"' : '') + '><div class="metric-label">' + n + '</div><div class="metric-value">' + fmt(t, 2) + ' s</div></div>').join('') + '</div>';
+            const pairs = [['Ep', 'A', 'E′ beats AdamW'], ['Ep', 'B', 'E′ beats top-k'], ['Ep', 'Cp', 'E′ beats C′'], ['E', 'A', 'E beats AdamW'], ['E', 'B', 'E beats top-k'], ['E', 'C', 'E beats C'], ['Cp', 'A', 'C′ beats AdamW']];
+            const exact = $('be-steps').value === 'c';
+            $('be-note').innerHTML = 'Crossings in 0.1 to 1,000 GB/s, ' + (exact ? 'with the <strong>exact band&rsquo;s steps</strong> for E and E&prime; (no hypothesis)' : 'with <strong>E&rsquo;s single-seed steps</strong> (a hypothesis)') + ', module [' + $('be-mod').value + ']: ' + pairs.map(([x, y, label]) => {
+                const c = cross(x, y);
+                return label + (c ? ' below <strong>' + sig(c / 1e9) + ' GB/s</strong> (' + sig(c * 8 / 1e9) + ' Gb/s)' : ': <strong>never</strong>');
+            }).join('; ') + '. Fastest at this bandwidth: ' + best[0].replace(/  .*/, '') + '. Times at the recorded points equal results.md section 2; the crossings equal section 7a.';
+            draw();
+        }
+        $('be-bw').addEventListener('input', () => { BW = Math.pow(10, +$('be-bw').value) * 1e9; update(); });
+        ['be-mod', 'be-steps'].forEach(id => $(id).addEventListener('change', update));
+        document.querySelectorAll('#slide-07 button[data-bw]').forEach(b => b.addEventListener('click', () => { BW = +b.dataset.bw; $('be-bw').value = Math.log10(BW / 1e9); update(); }));
+        update();
+    })();
+    </script>
+    <p style="font-size:0.85rem;">How the curves are drawn: on 2 DC &times; 4 only the sync&rsquo;s WAN term depends on the bandwidth, B / bw for an all-reduce or the switch sum, 4P / bw for an all-gather, and max(4P / bw, P / 25 GB/s) for a pluggable, whose port caps its flow. The rest of each step is taken from results.json&rsquo;s 100 GbE step. A build-time check (<code>_cit05_build/slider_model.py</code>) confirms that this reproduces every time-to-target column on 2 DC &times; 4 and all 28 rows of section 7a.</p>
+    <div class="table-wrap">
+        <table>
+            <tr><th>X</th><th>Y</th><th>Module</th><th>Steps</th><th>Break-even</th><th>Faster below</th></tr>
+            <tr><td><strong>E&prime;&nbsp; band in transit, summed at the switch (hypothetical)</strong></td><td>A&nbsp; AdamW, dense ring all-reduce</td><td>free</td><td>E</td><td>1.57 GB/s (12.5 Gb/s)</td><td>E&prime;</td></tr>
+            <tr><td><strong>E&prime;&nbsp; band in transit, summed at the switch (hypothetical)</strong></td><td>A&nbsp; AdamW, dense ring all-reduce</td><td>free</td><td>C&nbsp; (exact)</td><td>0.83 GB/s (6.64 Gb/s)</td><td>E&prime;</td></tr>
+            <tr><td><strong>E&prime;&nbsp; band in transit, summed at the switch (hypothetical)</strong></td><td>A&nbsp; AdamW, dense ring all-reduce</td><td>high</td><td>E</td><td>1.22 GB/s (9.72 Gb/s)</td><td>E&prime;</td></tr>
+            <tr><td><strong>E&prime;&nbsp; band in transit, summed at the switch (hypothetical)</strong></td><td>A&nbsp; AdamW, dense ring all-reduce</td><td>high</td><td>C&nbsp; (exact)</td><td>0.648 GB/s (5.19 Gb/s)</td><td>E&prime;</td></tr>
+            <tr><td><strong>E&prime;&nbsp; band in transit, summed at the switch (hypothetical)</strong></td><td>B&nbsp; DeMo top-k, all-gather</td><td>free</td><td>E</td><td>0.461 GB/s (3.69 Gb/s)</td><td>E&prime;</td></tr>
+            <tr><td><strong>E&prime;&nbsp; band in transit, summed at the switch (hypothetical)</strong></td><td>B&nbsp; DeMo top-k, all-gather</td><td>free</td><td>C&nbsp; (exact)</td><td>0.116 GB/s (0.927 Gb/s)</td><td>E&prime;</td></tr>
+            <tr><td><strong>E&prime;&nbsp; band in transit, summed at the switch (hypothetical)</strong></td><td>B&nbsp; DeMo top-k, all-gather</td><td>high</td><td>E</td><td>0.36 GB/s (2.88 Gb/s)</td><td>E&prime;</td></tr>
+            <tr><td>E&prime;&nbsp; band in transit, summed at the switch (hypothetical)</td><td>B&nbsp; DeMo top-k, all-gather</td><td>high</td><td>C&nbsp; (exact)</td><td>none in range</td><td>B</td></tr>
+            <tr><td><strong>E&prime;&nbsp; band in transit, summed at the switch (hypothetical)</strong></td><td>C&prime;&nbsp; fixed band on the GPU, ring all-reduce (hypothetical)</td><td>free</td><td>E</td><td>0.366 GB/s (2.93 Gb/s)</td><td>E&prime;</td></tr>
+            <tr><td>E&prime;&nbsp; band in transit, summed at the switch (hypothetical)</td><td>C&prime;&nbsp; fixed band on the GPU, ring all-reduce (hypothetical)</td><td>free</td><td>C&nbsp; (exact)</td><td>none in range</td><td>C&prime;</td></tr>
+            <tr><td><strong>E&prime;&nbsp; band in transit, summed at the switch (hypothetical)</strong></td><td>C&prime;&nbsp; fixed band on the GPU, ring all-reduce (hypothetical)</td><td>high</td><td>E</td><td>0.269 GB/s (2.16 Gb/s)</td><td>E&prime;</td></tr>
+            <tr><td>E&prime;&nbsp; band in transit, summed at the switch (hypothetical)</td><td>C&prime;&nbsp; fixed band on the GPU, ring all-reduce (hypothetical)</td><td>high</td><td>C&nbsp; (exact)</td><td>none in range</td><td>C&prime;</td></tr>
+            <tr><td>E&nbsp; band in transit (pluggable), all-gather</td><td>A&nbsp; AdamW, dense ring all-reduce</td><td>free</td><td>E</td><td>none in range</td><td>A</td></tr>
+            <tr><td>E&nbsp; band in transit (pluggable), all-gather</td><td>A&nbsp; AdamW, dense ring all-reduce</td><td>free</td><td>C&nbsp; (exact)</td><td>none in range</td><td>A</td></tr>
+            <tr><td>E&nbsp; band in transit (pluggable), all-gather</td><td>A&nbsp; AdamW, dense ring all-reduce</td><td>high</td><td>E</td><td>none in range</td><td>A</td></tr>
+            <tr><td>E&nbsp; band in transit (pluggable), all-gather</td><td>A&nbsp; AdamW, dense ring all-reduce</td><td>high</td><td>C&nbsp; (exact)</td><td>none in range</td><td>A</td></tr>
+            <tr><td>E&nbsp; band in transit (pluggable), all-gather</td><td>B&nbsp; DeMo top-k, all-gather</td><td>free</td><td>E</td><td>none in range</td><td>B</td></tr>
+            <tr><td>E&nbsp; band in transit (pluggable), all-gather</td><td>B&nbsp; DeMo top-k, all-gather</td><td>free</td><td>C&nbsp; (exact)</td><td>none in range</td><td>B</td></tr>
+            <tr><td>E&nbsp; band in transit (pluggable), all-gather</td><td>B&nbsp; DeMo top-k, all-gather</td><td>high</td><td>E</td><td>none in range</td><td>B</td></tr>
+            <tr><td>E&nbsp; band in transit (pluggable), all-gather</td><td>B&nbsp; DeMo top-k, all-gather</td><td>high</td><td>C&nbsp; (exact)</td><td>none in range</td><td>B</td></tr>
+            <tr><td><strong>E&nbsp; band in transit (pluggable), all-gather</strong></td><td>C&nbsp; fixed band on the GPU, all-gather</td><td>free</td><td>E</td><td>1.81 GB/s (14.5 Gb/s)</td><td>E</td></tr>
+            <tr><td>E&nbsp; band in transit (pluggable), all-gather</td><td>C&nbsp; fixed band on the GPU, all-gather</td><td>free</td><td>C&nbsp; (exact)</td><td>none in range</td><td>C</td></tr>
+            <tr><td><strong>E&nbsp; band in transit (pluggable), all-gather</strong></td><td>C&nbsp; fixed band on the GPU, all-gather</td><td>high</td><td>E</td><td>1.25 GB/s (10 Gb/s)</td><td>E</td></tr>
+            <tr><td>E&nbsp; band in transit (pluggable), all-gather</td><td>C&nbsp; fixed band on the GPU, all-gather</td><td>high</td><td>C&nbsp; (exact)</td><td>none in range</td><td>C</td></tr>
+            <tr><td><strong>C&prime;&nbsp; fixed band on the GPU, ring all-reduce (hypothetical)</strong></td><td>A&nbsp; AdamW, dense ring all-reduce</td><td>–</td><td>measured</td><td>6.58 GB/s (52.7 Gb/s)</td><td>C&prime;</td></tr>
+            <tr><td><strong>C&prime;&nbsp; fixed band on the GPU, ring all-reduce (hypothetical)</strong></td><td>B&nbsp; DeMo top-k, all-gather</td><td>–</td><td>measured</td><td>0.799 GB/s (6.39 Gb/s)</td><td>C&prime;</td></tr>
+            <tr><td>C&nbsp; fixed band on the GPU, all-gather</td><td>A&nbsp; AdamW, dense ring all-reduce</td><td>–</td><td>measured</td><td>none in range</td><td>A</td></tr>
+            <tr><td>B&nbsp; DeMo top-k, all-gather</td><td>A&nbsp; AdamW, dense ring all-reduce</td><td>–</td><td>measured</td><td>none in range</td><td>B</td></tr>
+        </table>
+        </div>
+    <p style="font-size:0.85rem;">Source: results.md, section 7a (bisection to a relative tolerance of 1e-4). Steps &ldquo;E&rdquo;: E&rsquo;s single-seed steps, so the crossing is a <strong>hypothesis</strong>; &ldquo;C (exact)&rdquo;: the exact band&rsquo;s steps for both in-transit and band variants; &ldquo;measured&rdquo;: no in-transit variant involved. Rows with a crossing in bold.</p>
+</section>
+
+<section class="slide" id="slide-08">
+    <div class="slide-number">08</div>
+    <h2>Break-even in Module GFLOP/s, ENOB and Bit Planes</h2>
+    <p><strong>The compute budget</strong> (transform charged), swept from 1 to 100,000 GFLOP/s:</p>
+    <div class="table-wrap">
+        <table>
+            <tr><th>X</th><th>Y</th><th>Topology</th><th>Break-even</th></tr>
+            <tr><td>E&nbsp; band in transit (pluggable), all-gather</td><td>C&nbsp; fixed band on the GPU, all-gather</td><td>2 DC &times; 4, 100 GbE</td><td>none in range</td></tr>
+            <tr><td>E&prime;&nbsp; band in transit, summed at the switch (hypothetical)</td><td>A&nbsp; AdamW, dense ring all-reduce</td><td>2 DC &times; 4, 100 GbE</td><td>none in range</td></tr>
+            <tr><td>E&nbsp; band in transit (pluggable), all-gather</td><td>C&nbsp; fixed band on the GPU, all-gather</td><td>2 DC &times; 4, 8 Gb/s</td><td>79.9 GFLOP/s</td></tr>
+            <tr><td>E&prime;&nbsp; band in transit, summed at the switch (hypothetical)</td><td>A&nbsp; AdamW, dense ring all-reduce</td><td>2 DC &times; 4, 8 Gb/s</td><td>77.3 GFLOP/s</td></tr>
+            <tr><td>E&prime;&nbsp; band in transit, summed at the switch (hypothetical)</td><td>B&nbsp; DeMo top-k, all-gather</td><td>2 DC &times; 4, 8 Gb/s</td><td>none in range</td></tr>
+            <tr><td>E&prime;&nbsp; band in transit, summed at the switch (hypothetical)</td><td>C&prime;&nbsp; fixed band on the GPU, ring all-reduce (hypothetical)</td><td>2 DC &times; 4, 8 Gb/s</td><td>none in range</td></tr>
+            <tr><td>E&prime;&nbsp; band in transit, summed at the switch (hypothetical)</td><td>A&nbsp; AdamW, dense ring all-reduce</td><td>8 DC &times; 1, 25 GbE</td><td>none in range</td></tr>
+        </table>
+        </div>
+    <p style="font-size:0.85rem;">Source: results.md, section 7b. Every row uses E&rsquo;s single-seed steps: a hypothesis.</p>
+    <ul>
+        <li><strong>On a 100 GbE WAN no budget is enough:</strong> even at 100,000 GFLOP/s the band in transit is slower than the band on the GPU, and E&prime; slower than AdamW. The optics binds before the budget runs out.</li>
+        <li><strong>On the 8 Gb/s WAN</strong> a pluggable beats the band on the GPU above 79.9 GFLOP/s, and E&prime; beats AdamW above 77.3 GFLOP/s; at no budget does E&prime; beat top-k or C&prime;.</li>
+        <li><strong>The budget stops binding at 140.0 GFLOP/s</strong> (the 1-D 256-point band, 8 planes), above the series&rsquo; bracket of 10 to 99.</li>
+    </ul>
+    <p><strong>ENOB</strong> enters only through convergence: the steps of the E run at that ENOB (one seed each), as a step function between the measured 6, 8, 10 and 12.</p>
+    <div class="table-wrap">
+        <table>
+            <tr><th>ENOB</th><th>steps to 3.158</th><th>steps to 3.124</th><th>steps to 3.087</th><th>steps to 1.785</th><th>steps to 1.646</th></tr>
+            <tr><td>6</td><td>never</td><td>never</td><td>never</td><td>never</td><td>never</td></tr>
+            <tr><td>8</td><td>1,800</td><td>2,000</td><td>2,200</td><td>never</td><td>never</td></tr>
+            <tr><td>10</td><td>1,600</td><td>1,800</td><td>1,800</td><td>never</td><td>never</td></tr>
+            <tr><td>12</td><td>1,800</td><td>2,000</td><td>2,000</td><td>never</td><td>never</td></tr>
+        </table>
+        </div>
+    <div class="table-wrap">
+        <table>
+            <tr><th>X</th><th>Y</th><th>Topology</th><th>Module</th><th>Break-even ENOB</th><th>X - Y at ENOB 12 (s)</th></tr>
+            <tr><td>E&nbsp; band in transit (pluggable), all-gather</td><td>C&nbsp; fixed band on the GPU, all-gather</td><td>2 DC &times; 4, 100 GbE</td><td>free</td><td>none in range</td><td>3.25</td></tr>
+            <tr><td>E&nbsp; band in transit (pluggable), all-gather</td><td>C&nbsp; fixed band on the GPU, all-gather</td><td>2 DC &times; 4, 8 Gb/s</td><td>free</td><td>8 (bisection: 8.0000)</td><td>-3.07</td></tr>
+            <tr><td>E&prime;&nbsp; band in transit, summed at the switch (hypothetical)</td><td>A&nbsp; AdamW, dense ring all-reduce</td><td>2 DC &times; 4, 8 Gb/s</td><td>free</td><td>8 (bisection: 8.0000)</td><td>-3.30</td></tr>
+            <tr><td>E&prime;&nbsp; band in transit, summed at the switch (hypothetical)</td><td>B&nbsp; DeMo top-k, all-gather</td><td>2 DC &times; 4, 8 Gb/s</td><td>free</td><td>none in range</td><td>3.23</td></tr>
+            <tr><td>E&prime;&nbsp; band in transit, summed at the switch (hypothetical)</td><td>C&prime;&nbsp; fixed band on the GPU, ring all-reduce (hypothetical)</td><td>2 DC &times; 4, 8 Gb/s</td><td>free</td><td>none in range</td><td>2.97</td></tr>
+            <tr><td>E&prime;&nbsp; band in transit, summed at the switch (hypothetical)</td><td>A&nbsp; AdamW, dense ring all-reduce</td><td>2 DC &times; 4, 8 Gb/s</td><td>high</td><td>8 (bisection: 8.0000)</td><td>-1.61</td></tr>
+        </table>
+        </div>
+    <p style="font-size:0.85rem;">Source: results.md, section 7c. ENOB 6 never reaches any ladder loss, and no ENOB reaches 1.785 or 1.646 (top-k&rsquo;s and AdamW&rsquo;s final losses). Where an in-transit variant wins at all, the break-even ENOB is <strong>8</strong>, the lowest measured ENOB that trains. The mapping is not monotone (ENOB 10 needs fewer steps than 12): single seeds.</p>
+    <p><strong>Bit planes</strong> trade throughput against convergence: each plane is one optical pass (2 DC &times; 4, 100 GbE, ENOB 8).</p>
+    <div class="table-wrap">
+        <table>
+            <tr><th>Planes</th><th>Module</th><th>Steps to target</th><th>Optics stage, one dense delta (ms)</th><th>Time to target (s) E</th><th>Time to target (s) E&prime;</th></tr>
+            <tr><td>4</td><td>free</td><td>2,600</td><td>1.131</td><td>7.66</td><td>7.10</td></tr>
+            <tr><td>4</td><td>high</td><td>2,600</td><td>1.131</td><td>12.69</td><td>12.12</td></tr>
+            <tr><td>8</td><td>free</td><td>1,800</td><td>2.262</td><td>7.10</td><td>6.71</td></tr>
+            <tr><td>8</td><td>high</td><td>1,800</td><td>2.262</td><td>8.78</td><td>8.39</td></tr>
+            <tr><td>12</td><td>free</td><td>2,000</td><td>3.393</td><td>10.15</td><td>9.71</td></tr>
+            <tr><td>12</td><td>high</td><td>2,000</td><td>3.393</td><td>10.15</td><td>9.71</td></tr>
+        </table>
+        </div>
+    <p style="font-size:0.85rem;">Source: results.md, section 8 (one seed per plane count). Four planes halve the optics stage but need 2,600 steps; twelve need 2,000. Eight is the fastest to 3.158 for both E and E&prime;.</p>
+</section>
+
+<section class="slide" id="slide-09">
+    <div class="slide-number">09</div>
+    <h2>Energy</h2>
+    <p>Per step, all 8 workers, 2 DC &times; 4, 100 GbE. Compute = each H100&rsquo;s static power (100 W, illustrative) for the whole step + 1 pJ per FLOP; link = each preset&rsquo;s pJ/bit over every byte; module = (9.7 W static + 2 W laser, illustrative) per module for the whole step + 2.76 pJ/bit over the bytes it processes. Energy to target = steps &times; energy per step.</p>
+    <div class="table-wrap">
+        <table>
+            <tr><th>Variant</th><th>Compute (J/step)</th><th>Link (J/step)</th><th>Module (J/step)</th><th>Module share</th><th>Energy to target (kJ)</th></tr>
+            <tr><td>A&nbsp; AdamW, dense ring all-reduce</td><td>4.817</td><td>0.0532</td><td>0.000</td><td>0.0%</td><td>1.95</td></tr>
+            <tr><td>B&nbsp; DeMo top-k, all-gather</td><td>3.412</td><td>0.0266</td><td>0.000</td><td>0.0%</td><td>1.38</td></tr>
+            <tr><td>C&nbsp; fixed band on the GPU, all-gather</td><td>2.714</td><td>0.0133</td><td>0.000</td><td>0.0%</td><td>7.27</td></tr>
+            <tr><td>E&nbsp; band in transit (pluggable), all-gather [low]</td><td>28.235</td><td>0.0133</td><td>3.127</td><td>10.0%</td><td>56.48</td></tr>
+            <tr><td>E&nbsp; band in transit (pluggable), all-gather [high]</td><td>5.460</td><td>0.0133</td><td>0.462</td><td>7.8%</td><td>10.68</td></tr>
+            <tr><td>E&nbsp; band in transit (pluggable), all-gather [free]</td><td>4.711</td><td>0.0133</td><td>0.375</td><td>7.3%</td><td>9.18</td></tr>
+            <tr><td>C&prime;&nbsp; fixed band on the GPU, ring all-reduce (hypothetical)</td><td>2.207</td><td>0.0033</td><td>0.000</td><td>0.0%</td><td>5.90</td></tr>
+            <tr><td>E&prime;&nbsp; band in transit, summed at the switch (hypothetical) [low]</td><td>28.061</td><td>0.0347</td><td>3.107</td><td>10.0%</td><td>56.17</td></tr>
+            <tr><td>E&prime;&nbsp; band in transit, summed at the switch (hypothetical) [high]</td><td>5.287</td><td>0.0347</td><td>0.442</td><td>7.7%</td><td>10.38</td></tr>
+            <tr><td>E&prime;&nbsp; band in transit, summed at the switch (hypothetical) [free]</td><td>4.537</td><td>0.0347</td><td>0.355</td><td>7.2%</td><td>8.87</td></tr>
+        </table>
+        </div>
+    <p style="font-size:0.85rem;">Source: results.md, section 5. Device power coefficients are disagg-sim&rsquo;s illustrative figures.</p>
+    <ul>
+        <li><strong>Energy is mostly the devices&rsquo;:</strong> the compute column is the largest in every row, because a slower step keeps every GPU powered for longer.</li>
+        <li><strong>The modules&rsquo; own share is small</strong>, 7.2% of E&prime; [free]&rsquo;s energy per step and 10.0% at [low]; what costs energy is the time they add.</li>
+        <li><strong>To 3.158</strong>, E&prime; [free] uses 8.87 kJ against 1.95 kJ for AdamW and 1.38 kJ for top-k; C&prime;, with no module, 5.90 kJ.</li>
+    </ul>
+</section>
+
+<section class="slide" id="slide-10">
+    <div class="slide-number">10</div>
+    <h2>Extrapolations (Outside the Experiment)</h2>
+    <div class="callout">
+        <div class="callout-label">Extrapolations, labelled as such</div>
+        <p>The experiment ran one model size (15.8M parameters), 8 workers and 3,000 steps, syncing every step. Below, bytes scale with the parameter count by each variant&rsquo;s measured bytes per parameter, and the steps to 3.158 and the 2,048 tokens per worker per step are <strong>assumed unchanged</strong>. Neither was tested.</p>
+    </div>
+    <p><strong>Model size</strong> (2 DC &times; 4, 100 GbE):</p>
+    <div class="table-wrap">
+        <table>
+            <tr><th>Variant</th><th>15.8M (measured): time (s)</th><th>1B: time (s)</th><th>Llama-3-8B shape: time (s)</th><th>hot spot at the largest</th></tr>
+            <tr><td>A&nbsp; AdamW, dense ring all-reduce</td><td>1.63</td><td>100.46</td><td>806.45</td><td>inter-DC link</td></tr>
+            <tr><td>B&nbsp; DeMo top-k, all-gather</td><td>0.93</td><td>56.48</td><td>453.35</td><td>inter-DC link</td></tr>
+            <tr><td>C&nbsp; fixed band on the GPU, all-gather</td><td>3.85</td><td>229.87</td><td>1,844.39</td><td>inter-DC link</td></tr>
+            <tr><td>E&nbsp; band in transit (pluggable), all-gather [high]</td><td>8.78</td><td>545.69</td><td>4,380.89</td><td>module compute</td></tr>
+            <tr><td>E&nbsp; band in transit (pluggable), all-gather [free]</td><td>7.10</td><td>439.20</td><td>3,525.75</td><td>module optics</td></tr>
+            <tr><td>C&prime;&nbsp; fixed band on the GPU, ring all-reduce (hypothetical)</td><td>2.16</td><td>119.91</td><td>961.04</td><td>compute</td></tr>
+            <tr><td>E&prime;&nbsp; band in transit, summed at the switch (hypothetical) [high]</td><td>8.39</td><td>523.16</td><td>4,200.18</td><td>module compute</td></tr>
+            <tr><td>E&prime;&nbsp; band in transit, summed at the switch (hypothetical) [free]</td><td>6.71</td><td>416.67</td><td>3,345.04</td><td>module optics</td></tr>
+        </table>
+        </div>
+    <p><strong>DiLoCo-style sync every H steps</strong>, with the same steps to 3.158: an assumption, not a measurement (DiLoCo changes the optimiser too).</p>
+    <div class="table-wrap">
+        <table>
+            <tr><th>Variant</th><th>H = 1: time (s)</th><th>H = 10</th><th>H = 100</th></tr>
+            <tr><td>A&nbsp; AdamW, dense ring all-reduce</td><td>1.63</td><td>0.34</td><td>0.21</td></tr>
+            <tr><td>B&nbsp; DeMo top-k, all-gather</td><td>0.93</td><td>0.27</td><td>0.20</td></tr>
+            <tr><td>C&prime;&nbsp; fixed band on the GPU, ring all-reduce (hypothetical)</td><td>2.16</td><td>1.40</td><td>1.32</td></tr>
+            <tr><td>E&prime;&nbsp; band in transit, summed at the switch (hypothetical) [free]</td><td>6.71</td><td>1.47</td><td>0.94</td></tr>
+        </table>
+        </div>
+    <p style="font-size:0.85rem;">Source: results.md, section 10.</p>
+    <ul>
+        <li><strong>Scaling the model does not change the order</strong> under these assumptions: top-k stays fastest and the module stays the hot spot of E at [high].</li>
+        <li><strong>Syncing less often shrinks every variant&rsquo;s communication</strong>, so the band&rsquo;s extra steps matter more: at H = 100 AdamW takes 0.21 s and E&prime; [free] 0.94 s.</li>
+    </ul>
+</section>
+
+<section class="slide" id="slide-11">
+    <div class="slide-number">11</div>
+    <h2>What It Means for a Photonic Link Module</h2>
+    <p>Against the five tests of <a href="https://brendanjameslynskey.github.io/CiT_01_Compute_in_Transit/#slide-10">deck 01</a>, for the fixed band computed in transit, in time and energy rather than steps:</p>
+    <div class="table-wrap">
+    <table>
+        <tr><th>Test</th><th>Pluggable (E)</th><th>At the switch (E&prime;, hypothetical)</th></tr>
+        <tr><td>Bottleneck</td><td><span class="badge bad">fail</span> Never breaks even with AdamW or top-k over 0.1 to 1,000 GB/s of WAN.</td><td><span class="badge warn">narrow</span> Beats AdamW only below 1.57 GB/s with E&rsquo;s steps, 0.83 GB/s with the exact band&rsquo;s.</td></tr>
+        <tr><td>Budget</td><td colspan="2"><span class="badge bad">fail</span> With the transform charged, module compute binds below 140.0 GFLOP/s, above the 10 to 99 bracket.</td></tr>
+        <tr><td>Precision</td><td colspan="2"><span class="badge ok">pass</span> ENOB 8 trains; ENOB 6 never reaches a ladder loss.</td></tr>
+        <tr><td>Placement</td><td><span class="badge bad">fail</span> One flow: it cannot sum, and it caps its worker&rsquo;s port.</td><td><span class="badge ok">pass</span> Streams meet at the switch; needs a loopback of each worker&rsquo;s own band.</td></tr>
+    </table>
+    </div>
+    <div class="diagram-grid cols-2">
+        <div class="diagram-panel accent-border">
+            <h4>Where in-network summing matters</h4>
+            <p>An all-gather of the band still sends 13,854,288 bytes per worker, 0.25 of AdamW&rsquo;s 55,417,152, while it needs 1,800 steps to AdamW&rsquo;s 400. Summing is what cuts the WAN traffic: E&prime; sends only the band sum between data centres, and on a slow, shared WAN that is where it gains (slides 06 and 07).</p>
+        </div>
+        <div class="diagram-panel accent-border">
+            <h4>But the summing does not need the module</h4>
+            <p>C&prime;, the same band computed on the GPU and ring all-reduced, beats AdamW below 6.58 GB/s. With both on the exact band&rsquo;s steps, <strong>E&prime; never beats C&prime;</strong> in range. Only E&rsquo;s single-seed step advantage, the hypothesis, lets E&prime; beat C&prime; at all.</p>
+        </div>
+    </div>
+    <div class="callout">
+        <div class="callout-label">Verdict</div>
+        <p>At this scale a photonic link module (<a href="https://arxiv.org/abs/2608.21536">arXiv:2608.21536</a>) computing a fixed band in transit does not shorten training: as a pluggable it never breaks even, and at a switch it gains only on slow WANs, where a band summed by the GPUs gains more. The module&rsquo;s case would need the repaired optics&rsquo; fewer steps to hold up over more seeds, a budget above 140.0 GFLOP/s or a free transform, and a switch placement with a loopback.</p>
+    </div>
+</section>
+
+<section class="slide" id="slide-12">
+    <div class="slide-number">12</div>
+    <h2>Limits, Next Steps, and What to Take Away</h2>
+    <div class="diagram-grid cols-2">
+        <div class="diagram-panel accent-border">
+            <h4>Limits</h4>
+            <ul>
+                <li>One model size (15.8M parameters), 8 workers, 3,000 steps; steps to a loss are measured only there, and resolved to the 200-step evaluation interval.</li>
+                <li>Single seeds for every E run: E&rsquo;s fewer steps, and every E-based crossing, are a hypothesis.</li>
+                <li>C&prime; and E&prime; were not run; they assume summing the band gives the same update as gathering it.</li>
+                <li>No compute&ndash;communication overlap; a pluggable&rsquo;s processing and its all-gather run one after the other (conservative).</li>
+                <li>Flows sharing a WAN link in one round are one transfer; background traffic only on the WAN; the intra-DC fabric is non-blocking.</li>
+                <li>Receivers&rsquo; inverse transforms and HBM traffic are not costed; E&prime;&rsquo;s sum is split evenly over the switch&rsquo;s modules.</li>
+                <li>The optics noise model is the series&rsquo; own; most module coefficients are illustrative.</li>
+            </ul>
+        </div>
+        <div class="diagram-panel accent-border">
+            <h4>Next</h4>
+            <ul>
+                <li>More E seeds, to turn E&rsquo;s step advantage, and every crossing that rests on it, from hypothesis into result.</li>
+                <li>Overlap of compute and communication, and a congested intra-DC fabric.</li>
+                <li>A selection without comparisons that keeps the momentum&rsquo;s energy (deck 04&rsquo;s open question): the model takes any bytes and steps.</li>
+            </ul>
+        </div>
+    </div>
+    <ul>
+        <li><strong>Top-k is the fastest to 3.158 on every topology simulated.</strong> AdamW&rsquo;s step is mostly communication (compute 12.1% on 2 DC &times; 4, 100 GbE), but the band needs many more steps.</li>
+        <li><strong>With the transform charged, the module is the bottleneck:</strong> at 10 GFLOP/s a pluggable step takes 33.348 ms against 1.443 ms for the band on the GPU.</li>
+        <li><strong>A pluggable all-gather never breaks even</strong> with AdamW or top-k over 0.1 to 1,000 GB/s of WAN.</li>
+        <li><strong>Summing in the network is where a band could gain:</strong> E&prime; beats AdamW below 1.57 GB/s with E&rsquo;s steps (a hypothesis), 0.83 GB/s with the exact band&rsquo;s.</li>
+        <li><strong>The same summation without a module does better:</strong> C&prime; beats AdamW below 6.58 GB/s, and on the exact band&rsquo;s steps E&prime; never beats C&prime;.</li>
+        <li><strong>Energy follows time:</strong> the devices dominate, and E&prime; [free] uses 8.87 kJ to 3.158 against 1.95 kJ for AdamW.</li>
+    </ul>
+</section>
+
+<!-- ════════════════════════════════════ Footer ════════════════════════════════════ -->
+<footer class="footer">
+    <p>Part of the <a href="https://github.com/BrendanJamesLynskey/LLM_Hub_Compute_in_Transit">Compute in Transit series</a> &middot; <a href="https://brendanjameslynskey.github.io/LLM_Hub_Compute_in_Transit/#glossary">glossary: every concept and where it is explained</a> &middot; numbers: <a href="https://github.com/BrendanJamesLynskey/Training_Transit_Sim/blob/main/examples/results.md">results.md</a> in <a href="https://github.com/BrendanJamesLynskey/Training_Transit_Sim">Training_Transit_Sim</a>, fed by <a href="https://github.com/BrendanJamesLynskey/DeMo_Fixed_Band_Experiment">DeMo_Fixed_Band_Experiment</a></p>
+    <p style="margin-top: 0.5rem; font-size: 0.8rem;"><a href="https://brendanjameslynskey.github.io/CiT_04_Fixed_Band_Experiment/">&larr; 04 The Fixed-Band Experiment</a> &middot; <a href="https://brendanjameslynskey.github.io/CiT_03_Data_Movement_in_LLM_Inference/">03 Data Movement in LLM Inference</a> &middot; <a href="https://brendanjameslynskey.github.io/CiT_02_Data_Movement_in_LLM_Training/">02 Data Movement in LLM Training</a> &middot; <a href="https://brendanjameslynskey.github.io/CiT_01_Compute_in_Transit/">01 Compute in Transit: the budget and the five tests</a></p>
+    <p style="margin-top: 0.5rem; font-size: 0.8rem;">Sister series: <a href="https://brendanjameslynskey.github.io/LLM_Hub_Fourier_Optics_Inference/">Fourier Optics for Inference</a> &middot; <a href="https://brendanjameslynskey.github.io/LLM_Hub_Inference_Simulators/">LLM Inference Simulators</a> &middot; <a href="https://brendanjameslynskey.github.io/FHE_Hub_Accelerator_Simulators/">FHE Accelerator Simulators</a> &middot; <a href="https://brendanjameslynskey.github.io/SimEng_Hub_Toolkit/">Simulation Engineering Toolkit</a></p>
+</footer>
+
+<script>
+    // Smooth scroll for TOC links
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            e.preventDefault();
+            const target = document.querySelector(this.getAttribute('href'));
+            if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+    });
+
+    // Subtle fade-in on scroll
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.style.opacity = '1';
+                entry.target.style.transform = 'translateY(0)';
+            }
+        });
+    }, { threshold: 0.1 });
+    document.querySelectorAll('.slide').forEach(slide => {
+        slide.style.opacity = '0';
+        slide.style.transform = 'translateY(30px)';
+        slide.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+        observer.observe(slide);
+    });
+</script>
+
+</body>
+</html>
