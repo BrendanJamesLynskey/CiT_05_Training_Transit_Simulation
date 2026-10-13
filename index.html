@@ -806,7 +806,8 @@
 <header class="hero">
     <div class="series-label">Compute in Transit &mdash; Presentation 05</div>
     <h1>Training Transit, <span class="accent">Simulated</span></h1>
-    <p class="subtitle">Deck 04 measured how many steps each way of syncing gradients needs to reach a loss, and how many bytes it sends. This deck turns that into wall-clock time and energy, with a SimPy model of eight workers in one or more data centres, and a photonic link module that computes the band in transit, at a worker&rsquo;s port or at the switch. Where does the module help, and what would it need to break even?</p>
+    <p class="subtitle"><strong>The goal:</strong> compress gradient traffic on the wire <strong>without sending indices</strong>, with the compression done <strong>for free in the link</strong>. A fixed frequency band needs no comparisons, so the optics can compute it in transit, and both ends already know which coefficients are sent.</p>
+    <p class="subtitle">Deck 04 measured how many steps each way of syncing gradients needs to reach a loss, and how many bytes it sends. This deck turns that into wall-clock time and energy, with a SimPy model of eight workers in one or more data centres, and a photonic link module that computes the band in transit, at a worker&rsquo;s port or at the switch. Where does the module help, and what would it need to break even? In short, at this scale it does not pay: a pluggable module never breaks even, and summing the band at the switch pays only on slow WANs.</p>
 
     <div class="tags">
         <span class="tag">SimPy model</span>
